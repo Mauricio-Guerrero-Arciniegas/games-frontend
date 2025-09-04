@@ -134,6 +134,7 @@ export default function Home() {
                       ? "bg-yellow-300 cursor-not-allowed"
                       : "bg-yellow-500 hover:bg-yellow-600"
                   }`}
+
                 >
                   {actionLoading === game.id ? "Iniciando..." : "Iniciar"}
                 </button>
@@ -145,6 +146,7 @@ export default function Home() {
                       ? "bg-red-300 cursor-not-allowed"
                       : "bg-red-500 hover:bg-red-600"
                   }`}
+                  
                 >
                   {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
                 </button>
