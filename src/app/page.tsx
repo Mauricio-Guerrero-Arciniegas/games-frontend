@@ -6,7 +6,7 @@ interface Game {
   name: string;
   state: string;
   players: string[];
-  score?: number | Record<string, number>;
+  score?: Record<string, number>;
 }
 
 const normalizeGame = (raw: any): Game => ({
@@ -14,13 +14,14 @@ const normalizeGame = (raw: any): Game => ({
   name: raw.name || raw.title || `Partida ${raw.id}`,
   state: raw.state,
   players: raw.players || [],
-  score: raw.score,
+  score: raw.score || {},
 });
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [scoreInputs, setScoreInputs] = useState<Record<number, Record<string, number>>>({});
 
   const fetchGames = async () => {
     try {
@@ -33,6 +34,7 @@ export default function Home() {
     }
   };
 
+  // Polling automático cada 5 segundos
   useEffect(() => {
     fetchGames();
     const interval = setInterval(fetchGames, 5000);
@@ -57,39 +59,32 @@ export default function Home() {
     }
   };
 
+  const handleScoreChange = (gameId: number, player: string, value: string) => {
+    setScoreInputs((prev) => ({
+      ...prev,
+      [gameId]: {
+        ...prev[gameId],
+        [player]: Number(value) || 0,
+      },
+    }));
+  };
+
   const handleEnd = async (id: number) => {
     setActionLoading(id);
-    const randomScore = Math.floor(Math.random() * 100);
+    const scores = scoreInputs[id] || {};
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${id}/end`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ score: randomScore }),
+        body: JSON.stringify({ score: scores }),
       });
       if (!res.ok) throw new Error("Error al finalizar partida");
       setGames((prev) =>
-        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: randomScore } : g))
+        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: scores } : g))
       );
     } catch (error) {
       console.error(error);
       alert("No se pudo finalizar la partida ❌");
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm("¿Seguro que deseas eliminar esta partida?")) return;
-    setActionLoading(id);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Error al eliminar partida");
-      setGames((prev) => prev.filter((g) => g.id !== id));
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo eliminar la partida ❌");
     } finally {
       setActionLoading(null);
     }
@@ -111,14 +106,40 @@ export default function Home() {
       ) : (
         <ul className="space-y-4">
           {games.map((game) => (
-            <li key={game.id} className="p-4 border rounded-lg shadow">
+            <li key={game.id} className="p-4 border rounded-lg shadow space-y-2">
               <p>
                 <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
-                {game.players.join(", ") || "Ninguno"} — Score:{" "}
-                {typeof game.score === "object"
-                  ? JSON.stringify(game.score)
-                  : game.score ?? "-"}
+                {game.players.join(", ") || "Ninguno"}
               </p>
+
+              {game.state === "finished" && game.score && (
+                <p>
+                  <b>🏆 Resultados:</b>{" "}
+                  {Object.entries(game.score)
+                    .map(([player, score]) => `${player}: ${score}`)
+                    .join(", ")}
+                </p>
+              )}
+
+              {game.state === "in_progress" && (
+                <div className="space-y-2">
+                  <p className="font-semibold">📊 Ingresar puntajes:</p>
+                  {game.players.map((player) => (
+                    <div key={player} className="flex items-center gap-2">
+                      <span className="w-32">{player}</span>
+                      <input
+                        type="number"
+                        className="border p-1 rounded w-20"
+                        value={scoreInputs[game.id]?.[player] ?? ""}
+                        onChange={(e) =>
+                          handleScoreChange(game.id, player, e.target.value)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="space-x-2 mt-2">
                 <a
                   href={`/join/${game.id}`}
@@ -134,7 +155,6 @@ export default function Home() {
                       ? "bg-yellow-300 cursor-not-allowed"
                       : "bg-yellow-500 hover:bg-yellow-600"
                   }`}
-
                 >
                   {actionLoading === game.id ? "Iniciando..." : "Iniciar"}
                 </button>
@@ -146,20 +166,8 @@ export default function Home() {
                       ? "bg-red-300 cursor-not-allowed"
                       : "bg-red-500 hover:bg-red-600"
                   }`}
-                  
                 >
                   {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
-                </button>
-                <button
-                  onClick={() => handleDelete(game.id)}
-                  disabled={actionLoading === game.id}
-                  className={`px-3 py-1 rounded text-white ${
-                    actionLoading === game.id
-                      ? "bg-gray-300 cursor-not-allowed"
-                      : "bg-gray-700 hover:bg-gray-800"
-                  }`}
-                >
-                  {actionLoading === game.id ? "Eliminando..." : "Eliminar"}
                 </button>
               </div>
             </li>
