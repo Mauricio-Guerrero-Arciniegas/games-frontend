@@ -1,8 +1,17 @@
 "use client";
 import { useEffect, useState } from "react";
 
+// ✅ Definimos un tipo para los juegos
+interface Game {
+  id: number;
+  name: string;
+  state: "pending" | "in_progress" | "finished";
+  players?: string[];
+  score?: number;
+}
+
 export default function Home() {
-  const [games, setGames] = useState<any[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
@@ -11,7 +20,7 @@ export default function Home() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`);
       if (!res.ok) throw new Error("Error al obtener partidas");
-      const data = await res.json();
+      const data: Game[] = await res.json(); // ✅ Usamos el tipo Game[]
       setGames(data);
     } catch (error) {
       console.error(error);
@@ -32,6 +41,7 @@ export default function Home() {
         method: "PATCH",
       });
       if (!res.ok) throw new Error("Error al iniciar partida");
+
       setGames((prev) =>
         prev.map((g) => (g.id === id ? { ...g, state: "in_progress" } : g))
       );
@@ -53,8 +63,11 @@ export default function Home() {
         body: JSON.stringify({ score: randomScore }),
       });
       if (!res.ok) throw new Error("Error al finalizar partida");
+
       setGames((prev) =>
-        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: randomScore } : g))
+        prev.map((g) =>
+          g.id === id ? { ...g, state: "finished", score: randomScore } : g
+        )
       );
     } catch (error) {
       console.error(error);
