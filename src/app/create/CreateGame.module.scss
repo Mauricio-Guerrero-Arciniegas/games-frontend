@@ -1,51 +1,80 @@
-.create-game {
+.createGame {
   max-width: 500px;
   margin: 2rem auto;
   padding: 2rem;
-  background: #ffffff;
+  background-color: #1f1f2e; /* fondo oscuro suave */
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  color: #f0f0f0;
+  font-family: 'Inter', sans-serif;
+}
+
+.createGame__title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #ffd166; /* color principal */
+}
+
+.createGame__form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.createGame__input {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 1px solid #444;
   border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background-color: #2b2b3c;
+  color: #f0f0f0;
+  transition: border 0.2s, box-shadow 0.2s;
+}
 
-  &__title {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: #333;
+.createGame__input:focus {
+  outline: none;
+  border-color: #ffd166;
+  box-shadow: 0 0 0 3px rgba(255, 209, 102, 0.3);
+}
+
+.createGame__button {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background-color: #ffd166;
+  color: #1f1f2e;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.createGame__button:hover {
+  background-color: #ffca47;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.createGame__button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .createGame {
+    margin: 1rem;
+    padding: 1.5rem;
   }
 
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .createGame__title {
+    font-size: 1.5rem;
   }
 
-  &__input {
-    padding: 0.75rem;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
-
-    &:focus {
-      border-color: #0070f3;
-      outline: none;
-      box-shadow: 0 0 4px rgba(0, 112, 243, 0.3);
-    }
-  }
-
-  &__button {
-    background-color: #0070f3;
-    color: #fff;
-    padding: 0.75rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s;
-
-    &:hover {
-      background-color: #005bb5;
-    }
+  .createGame__input,
+  .createGame__button {
+    font-size: 0.95rem;
+    padding: 0.65rem 0.9rem;
   }
 }

@@ -1,6 +1,5 @@
-
 "use client";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import styles from "./CreateGame.module.scss";
 
@@ -18,7 +17,7 @@ export default function CreateGame() {
 
   const handleMaxPlayersChange = (value: number) => {
     setMaxPlayers(value);
-    setPlayers((prev) => {
+    setPlayers(prev => {
       const updated = [...prev];
       if (value > updated.length) {
         return [...updated, ...Array(value - updated.length).fill("")];
@@ -31,13 +30,13 @@ export default function CreateGame() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (players.some((p) => !p.trim())) {
+    if (players.some(p => !p.trim())) {
       alert("⚠️ Debes ingresar todos los nombres de jugadores");
       return;
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/games`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -52,7 +51,7 @@ export default function CreateGame() {
       const newGame = await res.json();
 
       for (let i = 1; i < players.length; i++) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${newGame.id}/join`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/games/${newGame.id}/join`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ playerName: players[i] }),
@@ -68,23 +67,23 @@ export default function CreateGame() {
   };
 
   return (
-    <main className={styles["create-game"]}>
-      <h1 className={styles["create-game__title"]}>➕ Crear Partida</h1>
-      <form onSubmit={handleSubmit} className={styles["create-game__form"]}>
+    <main className={styles.createGame}>
+      <h1 className={styles.createGame__title}>➕ Crear Partida</h1>
+      <form onSubmit={handleSubmit} className={styles.createGame__form}>
         <input
           type="text"
           value={name}
           placeholder="Nombre de la partida"
-          onChange={(e) => setName(e.target.value)}
-          className={styles["create-game__input"]}
+          onChange={e => setName(e.target.value)}
+          className={styles.createGame__input}
         />
         <input
           type="number"
           min={2}
           value={maxPlayers}
           placeholder="Máx jugadores"
-          onChange={(e) => handleMaxPlayersChange(Number(e.target.value))}
-          className={styles["create-game__input"]}
+          onChange={e => handleMaxPlayersChange(Number(e.target.value))}
+          className={styles.createGame__input}
         />
         {players.map((player, index) => (
           <input
@@ -92,13 +91,11 @@ export default function CreateGame() {
             type="text"
             value={player}
             placeholder={`Nombre del jugador ${index + 1}`}
-            onChange={(e) => handlePlayerChange(index, e.target.value)}
-            className={styles["create-game__input"]}
+            onChange={e => handlePlayerChange(index, e.target.value)}
+            className={styles.createGame__input}
           />
         ))}
-        <button type="submit" className={styles["create-game__button"]}>
-          Crear
-        </button>
+        <button type="submit" className={styles.createGame__button}>Crear</button>
       </form>
     </main>
   );
