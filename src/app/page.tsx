@@ -62,7 +62,6 @@ export default function Home() {
       const newGame = await res.json();
       setGames((prev) => [...prev, normalizeGame(newGame)]);
 
-      // limpiar formulario
       setName("");
       setMaxPlayers(2);
       setPlayerName("");
