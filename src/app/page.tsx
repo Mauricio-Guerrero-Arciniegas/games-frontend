@@ -9,6 +9,7 @@ interface Game {
   score?: Record<string, number>;
 }
 
+
 const normalizeGame = (raw: any): Game => ({
   id: raw.id,
   name: raw.name || raw.title || `Partida ${raw.id}`,
@@ -19,7 +20,7 @@ const normalizeGame = (raw: any): Game => ({
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [scoreInputs, setScoreInputs] = useState<Record<number, Record<string, number>>>({});
 
