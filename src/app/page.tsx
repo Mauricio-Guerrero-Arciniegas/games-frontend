@@ -29,7 +29,6 @@ const normalizeGame = (raw: RawGame): Game => ({
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(true); // solo para la primera carga
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [scoreInputs, setScoreInputs] = useState<Record<number, Record<string, number>>>({});
 
@@ -37,24 +36,17 @@ export default function Home() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`);
       if (!res.ok) throw new Error("Error al obtener partidas");
-      const data: RawGame[] = await res.json();
-      const normalized = data.map(normalizeGame);
 
-      // ✅ solo actualizar si hay cambios reales
-      setGames((prev) =>
-        JSON.stringify(prev) === JSON.stringify(normalized) ? prev : normalized
-      );
+      // 👇 tipamos la respuesta explícitamente
+      const data: RawGame[] = (await res.json()) as RawGame[];
+      setGames(data.map(normalizeGame));
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false); // después de la primera carga, ya no se muestra "Cargando"
     }
   };
 
   useEffect(() => {
     fetchGames();
-    const interval = setInterval(fetchGames, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   const handleStart = async (id: number) => {
@@ -130,83 +122,79 @@ export default function Home() {
         </a>
       </div>
 
-      {loading ? (
-        <p>Cargando partidas...</p>
-      ) : (
-        <ul className={styles["home__list"]}>
-          {games.map((game) => (
-            <li key={game.id} className={styles["home__item"]}>
-              <p className={styles["home__game-info"]}>
-                <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
-                {game.players.join(", ") || "Ninguno"}
+      <ul className={styles["home__list"]}>
+        {games.map((game) => (
+          <li key={game.id} className={styles["home__item"]}>
+            <p className={styles["home__game-info"]}>
+              <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
+              {game.players.join(", ") || "Ninguno"}
+            </p>
+
+            {game.state === "finished" && game.score && (
+              <p className={styles["home__results"]}>
+                🏆 Resultados:{" "}
+                {Object.entries(game.score)
+                  .map(([player, score]) => `${player}: ${score}`)
+                  .join(", ")}
               </p>
+            )}
 
-              {game.state === "finished" && game.score && (
-                <p className={styles["home__results"]}>
-                  🏆 Resultados:{" "}
-                  {Object.entries(game.score)
-                    .map(([player, score]) => `${player}: ${score}`)
-                    .join(", ")}
-                </p>
-              )}
-
-              {game.state === "in_progress" && (
-                <div className={styles["home__scores"]}>
-                  <p>📊 Ingresar puntajes:</p>
-                  {game.players.map((player) => (
-                    <div key={player} className={styles["home__score-input"]}>
-                      <span>{player}</span>
-                      <input
-                        type="number"
-                        value={scoreInputs[game.id]?.[player] ?? ""}
-                        onChange={(e) =>
-                          handleScoreChange(game.id, player, e.target.value)
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className={styles["home__buttons"]}>
-                <a
-                  href={`/join/${game.id}`}
-                  className={`${styles["home__button"]} ${styles["home__button--join"]}`}
-                >
-                  Unirse
-                </a>
-                <button
-                  onClick={() => handleStart(game.id)}
-                  disabled={actionLoading === game.id}
-                  className={`${styles["home__button"]} ${styles["home__button--start"]} ${
-                    actionLoading === game.id ? styles["home__button--loading"] : ""
-                  }`}
-                >
-                  {actionLoading === game.id ? "Iniciando..." : "Iniciar"}
-                </button>
-                <button
-                  onClick={() => handleEnd(game.id)}
-                  disabled={actionLoading === game.id}
-                  className={`${styles["home__button"]} ${styles["home__button--end"]} ${
-                    actionLoading === game.id ? styles["home__button--loading"] : ""
-                  }`}
-                >
-                  {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
-                </button>
-                <button
-                  onClick={() => handleDelete(game.id)}
-                  disabled={actionLoading === game.id}
-                  className={`${styles["home__button"]} ${styles["home__button--delete"]} ${
-                    actionLoading === game.id ? styles["home__button--loading"] : ""
-                  }`}
-                >
-                  {actionLoading === game.id ? "Eliminando..." : "Eliminar"}
-                </button>
+            {game.state === "in_progress" && (
+              <div className={styles["home__scores"]}>
+                <p>📊 Ingresar puntajes:</p>
+                {game.players.map((player) => (
+                  <div key={player} className={styles["home__score-input"]}>
+                    <span>{player}</span>
+                    <input
+                      type="number"
+                      value={scoreInputs[game.id]?.[player] ?? ""}
+                      onChange={(e) =>
+                        handleScoreChange(game.id, player, e.target.value)
+                      }
+                    />
+                  </div>
+                ))}
               </div>
-            </li>
-          ))}
-        </ul>
-      )}
+            )}
+
+            <div className={styles["home__buttons"]}>
+              <a
+                href={`/join/${game.id}`}
+                className={`${styles["home__button"]} ${styles["home__button--join"]}`}
+              >
+                Unirse
+              </a>
+              <button
+                onClick={() => handleStart(game.id)}
+                disabled={actionLoading === game.id}
+                className={`${styles["home__button"]} ${styles["home__button--start"]} ${
+                  actionLoading === game.id ? styles["home__button--loading"] : ""
+                }`}
+              >
+                {actionLoading === game.id ? "Iniciando..." : "Iniciar"}
+              </button>
+              <button
+                onClick={() => handleEnd(game.id)}
+                disabled={actionLoading === game.id}
+                className={`${styles["home__button"]} ${styles["home__button--end"]} ${
+                  actionLoading === game.id ? styles["home__button--loading"] : ""
+                }`}
+              >
+                {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
+              </button>
+              <button
+                onClick={() => handleDelete(game.id)}
+                disabled={actionLoading === game.id}
+                className={`${styles["home__button"]} ${styles["home__button--delete"]} ${
+                  actionLoading === game.id ? styles["home__button--loading"] : ""
+                }`}
+              >
+                {actionLoading === game.id ? "Eliminando..." : "Eliminar"}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </main>
   );
 }
