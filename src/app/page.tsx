@@ -10,7 +10,16 @@ interface Game {
   score?: Record<string, number>;
 }
 
-const normalizeGame = (raw: any): Game => ({
+interface RawGame {
+  id: number;
+  name?: string;
+  title?: string;
+  state: string;
+  players?: string[];
+  score?: Record<string, number>;
+}
+
+const normalizeGame = (raw: RawGame): Game => ({
   id: raw.id,
   name: raw.name || raw.title || `Partida ${raw.id}`,
   state: raw.state,
@@ -20,7 +29,7 @@ const normalizeGame = (raw: any): Game => ({
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // solo para la primera carga
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [scoreInputs, setScoreInputs] = useState<Record<number, Record<string, number>>>({});
 
@@ -28,10 +37,17 @@ export default function Home() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`);
       if (!res.ok) throw new Error("Error al obtener partidas");
-      const data = await res.json();
-      setGames(data.map(normalizeGame));
+      const data: RawGame[] = await res.json();
+      const normalized = data.map(normalizeGame);
+
+      // ✅ solo actualizar si hay cambios reales
+      setGames((prev) =>
+        JSON.stringify(prev) === JSON.stringify(normalized) ? prev : normalized
+      );
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false); // después de la primera carga, ya no se muestra "Cargando"
     }
   };
 
@@ -136,7 +152,7 @@ export default function Home() {
 
               {game.state === "in_progress" && (
                 <div className={styles["home__scores"]}>
-                  <p className="ingresar">📊 Ingresar puntajes:</p>
+                  <p>📊 Ingresar puntajes:</p>
                   {game.players.map((player) => (
                     <div key={player} className={styles["home__score-input"]}>
                       <span>{player}</span>
@@ -153,7 +169,10 @@ export default function Home() {
               )}
 
               <div className={styles["home__buttons"]}>
-                <a href={`/join/${game.id}`} className={`${styles["home__button"]} ${styles["home__button--join"]}`}>
+                <a
+                  href={`/join/${game.id}`}
+                  className={`${styles["home__button"]} ${styles["home__button--join"]}`}
+                >
                   Unirse
                 </a>
                 <button
