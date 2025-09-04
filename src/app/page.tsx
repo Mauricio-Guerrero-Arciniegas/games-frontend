@@ -6,7 +6,7 @@ interface Game {
   name: string;
   state: string;
   players: string[];
-  score?: number;
+  score?: number | Record<string, number>;
 }
 
 const normalizeGame = (raw: any): Game => ({
@@ -22,10 +22,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  const [name, setName] = useState("");
-  const [maxPlayers, setMaxPlayers] = useState(2);
-  const [playerName, setPlayerName] = useState("");
-
   const fetchGames = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`);
@@ -37,38 +33,11 @@ export default function Home() {
     }
   };
 
-  // Polling automático cada 5 segundos
   useEffect(() => {
     fetchGames();
     const interval = setInterval(fetchGames, 5000);
     return () => clearInterval(interval);
   }, []);
-
-  const handleCreateGame = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          maxPlayers,
-          playerName: playerName || undefined,
-        }),
-      });
-
-      if (!res.ok) throw new Error("Error al crear partida");
-      const newGame = await res.json();
-      setGames((prev) => [...prev, normalizeGame(newGame)]);
-
-      setName("");
-      setMaxPlayers(2);
-      setPlayerName("");
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo crear la partida ❌");
-    }
-  };
 
   const handleStart = async (id: number) => {
     setActionLoading(id);
@@ -99,9 +68,7 @@ export default function Home() {
       });
       if (!res.ok) throw new Error("Error al finalizar partida");
       setGames((prev) =>
-        prev.map((g) =>
-          g.id === id ? { ...g, state: "finished", score: randomScore } : g
-        )
+        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: randomScore } : g))
       );
     } catch (error) {
       console.error(error);
@@ -111,55 +78,34 @@ export default function Home() {
     }
   };
 
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Seguro que deseas eliminar esta partida?")) return;
+    setActionLoading(id);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error al eliminar partida");
+      setGames((prev) => prev.filter((g) => g.id !== id));
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo eliminar la partida ❌");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <main className="p-8 space-y-6">
       <h1 className="text-3xl font-bold">🎮 Partidas</h1>
 
-      {/* Formulario de creación */}
-      <form
-        onSubmit={handleCreateGame}
-        className="space-y-4 p-4 border rounded-lg shadow"
+      <a
+        href="/create"
+        className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
       >
-        <h2 className="text-xl font-semibold">➕ Crear nueva partida</h2>
-        <div>
-          <label className="block mb-1">Nombre de la partida</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full border px-2 py-1 rounded"
-          />
-        </div>
-        <div>
-          <label className="block mb-1">Máximo de jugadores</label>
-          <input
-            type="number"
-            min={2}
-            value={maxPlayers}
-            onChange={(e) => setMaxPlayers(Number(e.target.value))}
-            required
-            className="w-full border px-2 py-1 rounded"
-          />
-        </div>
-        <div>
-          <label className="block mb-1">Tu nombre (jugador opcional)</label>
-          <input
-            type="text"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            className="w-full border px-2 py-1 rounded"
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Crear Partida
-        </button>
-      </form>
+        ➕ Crear Partida
+      </a>
 
-      {/* Lista de partidas */}
       {loading ? (
         <p className="text-gray-500">Cargando partidas...</p>
       ) : (
@@ -168,7 +114,10 @@ export default function Home() {
             <li key={game.id} className="p-4 border rounded-lg shadow">
               <p>
                 <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
-                {game.players.join(", ") || "Ninguno"} — Score: {game.score ?? "-"}
+                {game.players.join(", ") || "Ninguno"} — Score:{" "}
+                {typeof game.score === "object"
+                  ? JSON.stringify(game.score)
+                  : game.score ?? "-"}
               </p>
               <div className="space-x-2 mt-2">
                 <a
@@ -199,6 +148,17 @@ export default function Home() {
                 >
                   {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
                 </button>
+                <button
+                  onClick={() => handleDelete(game.id)}
+                  disabled={actionLoading === game.id}
+                  className={`px-3 py-1 rounded text-white ${
+                    actionLoading === game.id
+                      ? "bg-gray-300 cursor-not-allowed"
+                      : "bg-gray-700 hover:bg-gray-800"
+                  }`}
+                >
+                  {actionLoading === game.id ? "Eliminando..." : "Eliminar"}
+                </button>
               </div>
             </li>
           ))}
@@ -207,4 +167,3 @@ export default function Home() {
     </main>
   );
 }
-
