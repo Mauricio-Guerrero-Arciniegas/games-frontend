@@ -27,7 +27,6 @@ const normalizeGame = (raw: RawGame): Game => ({
   score: raw.score || {},
 });
 
-// Memoizado para que solo se re-renderice si cambian las props
 const GameItem = React.memo(({
   game,
   scoreInputs,
