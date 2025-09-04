@@ -22,7 +22,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
-  // Campos del formulario
   const [name, setName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [playerName, setPlayerName] = useState("");
@@ -208,3 +207,4 @@ export default function Home() {
     </main>
   );
 }
+
