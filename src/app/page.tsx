@@ -1,14 +1,21 @@
 "use client";
 import { useEffect, useState } from "react";
 
-// ✅ Definimos un tipo para los juegos
 interface Game {
   id: number;
   name: string;
-  state: "pending" | "in_progress" | "finished";
-  players?: string[];
+  state: string;
+  players: string[];
   score?: number;
 }
+
+const normalizeGame = (raw: any): Game => ({
+  id: raw.id,
+  name: raw.name || raw.title || `Partida ${raw.id}`,
+  state: raw.state,
+  players: raw.players || [],
+  score: raw.score,
+});
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
@@ -16,22 +23,21 @@ export default function Home() {
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const fetchGames = async () => {
-    setLoading(true);
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games`);
       if (!res.ok) throw new Error("Error al obtener partidas");
-      const data: Game[] = await res.json(); // ✅ Usamos el tipo Game[]
-      setGames(data);
+      const data = await res.json();
+      setGames(data.map(normalizeGame));
     } catch (error) {
       console.error(error);
-      alert("No se pudieron cargar las partidas ❌");
-    } finally {
-      setLoading(false);
     }
   };
 
+  // Polling automático cada 5 segundos
   useEffect(() => {
-    fetchGames();
+    fetchGames(); 
+    const interval = setInterval(fetchGames, 5000); // cada 5s
+    return () => clearInterval(interval); // limpiar al desmontar
   }, []);
 
   const handleStart = async (id: number) => {
@@ -41,7 +47,6 @@ export default function Home() {
         method: "PATCH",
       });
       if (!res.ok) throw new Error("Error al iniciar partida");
-
       setGames((prev) =>
         prev.map((g) => (g.id === id ? { ...g, state: "in_progress" } : g))
       );
@@ -63,11 +68,8 @@ export default function Home() {
         body: JSON.stringify({ score: randomScore }),
       });
       if (!res.ok) throw new Error("Error al finalizar partida");
-
       setGames((prev) =>
-        prev.map((g) =>
-          g.id === id ? { ...g, state: "finished", score: randomScore } : g
-        )
+        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: randomScore } : g))
       );
     } catch (error) {
       console.error(error);
@@ -96,7 +98,7 @@ export default function Home() {
             <li key={game.id} className="p-4 border rounded-lg shadow">
               <p>
                 <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
-                {game.players?.join(", ") || "Ninguno"}
+                {game.players.join(", ") || "Ninguno"} — Score: {game.score ?? "-"}
               </p>
               <div className="space-x-2 mt-2">
                 <a
