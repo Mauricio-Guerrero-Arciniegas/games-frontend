@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import styles from "./page.module.scss";
 
 interface Game {
   id: number;
@@ -8,7 +9,6 @@ interface Game {
   players: string[];
   score?: Record<string, number>;
 }
-
 
 const normalizeGame = (raw: any): Game => ({
   id: raw.id,
@@ -20,7 +20,7 @@ const normalizeGame = (raw: any): Game => ({
 
 export default function Home() {
   const [games, setGames] = useState<Game[]>([]);
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
   const [scoreInputs, setScoreInputs] = useState<Record<number, Record<string, number>>>({});
 
@@ -35,7 +35,6 @@ export default function Home() {
     }
   };
 
-  // Polling automático cada 5 segundos
   useEffect(() => {
     fetchGames();
     const interval = setInterval(fetchGames, 5000);
@@ -52,9 +51,8 @@ export default function Home() {
       setGames((prev) =>
         prev.map((g) => (g.id === id ? { ...g, state: "in_progress" } : g))
       );
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo iniciar la partida ❌");
+    } catch {
+      alert("❌ No se pudo iniciar la partida");
     } finally {
       setActionLoading(null);
     }
@@ -83,39 +81,53 @@ export default function Home() {
       setGames((prev) =>
         prev.map((g) => (g.id === id ? { ...g, state: "finished", score: scores } : g))
       );
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo finalizar la partida ❌");
+    } catch {
+      alert("❌ No se pudo finalizar la partida");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("⚠️ ¿Seguro que deseas eliminar esta partida?")) return;
+    setActionLoading(id);
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Error al eliminar partida");
+      setGames((prev) => prev.filter((g) => g.id !== id));
+    } catch {
+      alert("❌ No se pudo eliminar la partida");
     } finally {
       setActionLoading(null);
     }
   };
 
   return (
-    <main className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold">🎮 Partidas</h1>
+    <main className={styles.home}>
+      <h1 className={styles["home__title"]}>🎮 Partidas</h1>
 
-      <a
-        href="/create"
-        className="inline-block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        ➕ Crear Partida
-      </a>
+      <div className={styles["home__actions"]}>
+        <a href="/create" className={styles["home__link"]}>
+          ➕ Crear Partida
+        </a>
+      </div>
 
       {loading ? (
-        <p className="text-gray-500">Cargando partidas...</p>
+        <p>Cargando partidas...</p>
       ) : (
-        <ul className="space-y-4">
+        <ul className={styles["home__list"]}>
           {games.map((game) => (
-            <li key={game.id} className="p-4 border rounded-lg shadow space-y-2">
-              <p>
+            <li key={game.id} className={styles["home__item"]}>
+              <p className={styles["home__game-info"]}>
                 <b>{game.name}</b> — Estado: {game.state} — Jugadores:{" "}
                 {game.players.join(", ") || "Ninguno"}
               </p>
 
               {game.state === "finished" && game.score && (
-                <p>
-                  <b>🏆 Resultados:</b>{" "}
+                <p className={styles["home__results"]}>
+                  🏆 Resultados:{" "}
                   {Object.entries(game.score)
                     .map(([player, score]) => `${player}: ${score}`)
                     .join(", ")}
@@ -123,14 +135,13 @@ export default function Home() {
               )}
 
               {game.state === "in_progress" && (
-                <div className="space-y-2">
-                  <p className="font-semibold">📊 Ingresar puntajes:</p>
+                <div className={styles["home__scores"]}>
+                  <p className="ingresar">📊 Ingresar puntajes:</p>
                   {game.players.map((player) => (
-                    <div key={player} className="flex items-center gap-2">
-                      <span className="w-32">{player}</span>
+                    <div key={player} className={styles["home__score-input"]}>
+                      <span>{player}</span>
                       <input
                         type="number"
-                        className="border p-1 rounded w-20"
                         value={scoreInputs[game.id]?.[player] ?? ""}
                         onChange={(e) =>
                           handleScoreChange(game.id, player, e.target.value)
@@ -141,20 +152,15 @@ export default function Home() {
                 </div>
               )}
 
-              <div className="space-x-2 mt-2">
-                <a
-                  href={`/join/${game.id}`}
-                  className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                >
+              <div className={styles["home__buttons"]}>
+                <a href={`/join/${game.id}`} className={`${styles["home__button"]} ${styles["home__button--join"]}`}>
                   Unirse
                 </a>
                 <button
                   onClick={() => handleStart(game.id)}
                   disabled={actionLoading === game.id}
-                  className={`px-3 py-1 rounded text-white ${
-                    actionLoading === game.id
-                      ? "bg-yellow-300 cursor-not-allowed"
-                      : "bg-yellow-500 hover:bg-yellow-600"
+                  className={`${styles["home__button"]} ${styles["home__button--start"]} ${
+                    actionLoading === game.id ? styles["home__button--loading"] : ""
                   }`}
                 >
                   {actionLoading === game.id ? "Iniciando..." : "Iniciar"}
@@ -162,13 +168,20 @@ export default function Home() {
                 <button
                   onClick={() => handleEnd(game.id)}
                   disabled={actionLoading === game.id}
-                  className={`px-3 py-1 rounded text-white ${
-                    actionLoading === game.id
-                      ? "bg-red-300 cursor-not-allowed"
-                      : "bg-red-500 hover:bg-red-600"
+                  className={`${styles["home__button"]} ${styles["home__button--end"]} ${
+                    actionLoading === game.id ? styles["home__button--loading"] : ""
                   }`}
                 >
                   {actionLoading === game.id ? "Finalizando..." : "Finalizar"}
+                </button>
+                <button
+                  onClick={() => handleDelete(game.id)}
+                  disabled={actionLoading === game.id}
+                  className={`${styles["home__button"]} ${styles["home__button--delete"]} ${
+                    actionLoading === game.id ? styles["home__button--loading"] : ""
+                  }`}
+                >
+                  {actionLoading === game.id ? "Eliminando..." : "Eliminar"}
                 </button>
               </div>
             </li>

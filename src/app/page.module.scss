@@ -3,6 +3,8 @@
   margin: 2rem auto;
   padding: 1rem;
 
+  
+
   &__title {
     font-size: 2rem;
     font-weight: bold;
@@ -62,7 +64,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    color: rgb(228, 199, 39);
   }
+
 
   &__score-input {
     display: flex;
@@ -72,7 +76,10 @@
     span {
       width: 120px;
       font-weight: 500;
+      color: rgb(88, 85, 241);
     }
+
+    
 
     input {
       width: 80px;
