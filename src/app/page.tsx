@@ -66,7 +66,6 @@ export default function Home() {
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        // ⚠️ opcional: puedes mandar un score si tu backend lo requiere
         body: JSON.stringify({ score: Math.floor(Math.random() * 100) }),
       }
     );
