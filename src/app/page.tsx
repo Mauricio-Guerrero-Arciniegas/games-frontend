@@ -59,25 +59,30 @@ export default function Home() {
   };
 
   const handleEnd = async (id: number) => {
-    setActionLoading(id);
-    const randomScore = Math.floor(Math.random() * 100);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/games/${id}/end`, {
+  setActionLoading(id);
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/games/${id}/end`,
+      {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ score: randomScore }),
-      });
-      if (!res.ok) throw new Error("Error al finalizar partida");
-      setGames((prev) =>
-        prev.map((g) => (g.id === id ? { ...g, state: "finished", score: randomScore } : g))
-      );
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo finalizar la partida ❌");
-    } finally {
-      setActionLoading(null);
-    }
-  };
+        // ⚠️ opcional: puedes mandar un score si tu backend lo requiere
+        body: JSON.stringify({ score: Math.floor(Math.random() * 100) }),
+      }
+    );
+    if (!res.ok) throw new Error("Error al finalizar partida");
+
+    const updatedGame = await res.json(); // 👈 usamos la respuesta real
+    setGames((prev) =>
+      prev.map((g) => (g.id === id ? normalizeGame(updatedGame) : g))
+    );
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo finalizar la partida ❌");
+  } finally {
+    setActionLoading(null);
+  }
+};
 
   return (
     <main className="p-8 space-y-6">
